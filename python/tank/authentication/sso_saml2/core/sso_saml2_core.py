@@ -141,7 +141,9 @@ class SsoSaml2Core(object):
         QtGui = self._QtGui = qt_modules.get("QtGui")  # noqa
         QtNetwork = self._QtNetwork = qt_modules.get("QtNetwork")  # noqa
         QtWebKit = self._QtWebKit = qt_modules.get("QtWebKit")  # noqa
-        QtWebEngineWidgets = self._QtWebEngineWidgets = qt_modules.get("QtWebEngineWidgets")  # noqa
+        QtWebEngineWidgets = self._QtWebEngineWidgets = qt_modules.get(
+            "QtWebEngineWidgets"
+        )  # noqa
 
         if QtCore is None:
             raise SsoSaml2MissingQtCore("The QtCore module is unavailable")
@@ -157,6 +159,7 @@ class SsoSaml2Core(object):
             raise SsoSaml2MissingQtWebKit("The QtWebKit module is unavailable")
 
         if QtWebKit:
+
             class TKWebPageQt4(QtWebKit.QWebPage):
                 """
                 Wrapper class to better control the behaviour when clicking on links
@@ -185,7 +188,7 @@ class SsoSaml2Core(object):
                     """
                     get_logger().debug("TKWebPageQt4.__del__")
 
-                def acceptNavigationRequest(self, frame, request, n_type): # noqa
+                def acceptNavigationRequest(self, frame, request, n_type):  # noqa
                     """
                     Overloaded method, to properly control the behavioir of clicking on
                     links.
@@ -199,22 +202,24 @@ class SsoSaml2Core(object):
                     get_logger().debug(
                         "NavigationRequest, destination and reason: %s (%s)",
                         request.url().toString(),
-                        n_type
+                        n_type,
                     )
                     # A null frame means : open a new window/tab. so we just farm out
                     # the request to the external browser.
                     if (
                         frame is None
                         and n_type
-                        == QtWebKit.QWebPage.NavigationType.NavigationTypeLinkClicked:
+                        == QtWebKit.QWebPage.NavigationType.NavigationTypeLinkClicked
+                    ):
                         QtGui.QDesktopServices.openUrl(request.url())
-                    )
                         return False
                     # Otherwise we accept the default behaviour.
                     return QtWebKit.QWebPage.acceptNavigationRequest(
                         self, frame, request, n_type
                     )
+
         else:
+
             class TKWebPageQt5(QtWebEngineWidgets.QWebEnginePage):
                 """
                 Wrapper class to better control the behaviour when clicking on links
@@ -262,7 +267,9 @@ class SsoSaml2Core(object):
                     if self._profile is None:
                         QtGui.QDesktopServices.openUrl(url)
                         return False
-                    return QtWebEngineWidgets.QWebEnginePage.acceptNavigationRequest(self, url, n_type, is_mainframe)
+                    return QtWebEngineWidgets.QWebEnginePage.acceptNavigationRequest(
+                        self, url, n_type, is_mainframe
+                    )
 
                 def createWindow(self, window_type):
                     """
@@ -279,7 +286,9 @@ class SsoSaml2Core(object):
                     Signal called when the WebEngine detects and incorrect certificate.
                     For the time being, we ignore all certificate errors.
                     """
-                    get_logger().debug("TKWebPageQt5.certificateError: %s", certificate_error)
+                    get_logger().debug(
+                        "TKWebPageQt5.certificateError: %s", certificate_error
+                    )
                     return True
 
         self._event_data = None
@@ -304,7 +313,9 @@ class SsoSaml2Core(object):
             )
         else:
             self._profile = QtWebEngineWidgets.QWebEngineProfile.defaultProfile()
-            self._logger.debug("Using WebEngineProfile: %s", self._profile.persistentStoragePath())
+            self._logger.debug(
+                "Using WebEngineProfile: %s", self._profile.persistentStoragePath()
+            )
             self._view = QtWebEngineWidgets.QWebEngineView(self._dialog)
             self._view.setPage(TKWebPageQt5(self._profile, self._dialog))
 
@@ -315,7 +326,7 @@ class SsoSaml2Core(object):
 
         if QtWebKit:
             self._logger.debug("We are in a Qt4 environment, Getting the cookie jar.")
-            self._view.page().setNetworkAccessManager(self._networkAccessManager)
+            # self._view.page().setNetworkAccessManager(self._networkAccessManager)
             self._cookie_jar = self._view.page().networkAccessManager().cookieJar()
 
             self._logger.debug("Registering callback to handle polyfilling.")
@@ -345,10 +356,16 @@ class SsoSaml2Core(object):
             #
             # Worst case scenario : should Shotgun modify how the warning is displayed
             # it would show up in the page.
-            css_style = base64.b64encode('div.browser_not_approved { display: none !important; }')
-            self._view.settings().setUserStyleSheetUrl("data:text/css;charset=utf-8;base64," + css_style)
+            css_style = base64.b64encode(
+                "div.browser_not_approved { display: none !important; }"
+            )
+            self._view.settings().setUserStyleSheetUrl(
+                "data:text/css;charset=utf-8;base64," + css_style
+            )
         else:
-            self._logger.debug("We are in a Qt5 environment, registering cookie handlers.")
+            self._logger.debug(
+                "We are in a Qt5 environment, registering cookie handlers."
+            )
             # We want to persist cookies accross sessions.
             # The cookies will be cleared if there are no prior RV session in
             # method 'update_browser_from_session' if needed.
@@ -358,7 +375,6 @@ class SsoSaml2Core(object):
             self._cookie_jar = QtNetwork.QNetworkCookieJar()
             self._profile.cookieStore().cookieAdded.connect(self._on_cookie_added)
             self._profile.cookieStore().cookieRemoved.connect(self._on_cookie_deleted)
-
 
         # Purposely disable the 'Reload' contextual menu, as it should not be
         # used for SSO. Reloading the page confuses the server.
@@ -475,7 +491,9 @@ class SsoSaml2Core(object):
         # Here, the cookie jar is a dictionary of key/values
         cookies = SimpleCookie()
 
-        self._logger.debug("Updating session cookies from browser: %s", self._session.host)
+        self._logger.debug(
+            "Updating session cookies from browser: %s", self._session.host
+        )
         for cookie in self._cookie_jar.cookiesForUrl(self._session.host):
             cookies.load(str(cookie.toRawForm()))
 
@@ -604,7 +622,7 @@ class SsoSaml2Core(object):
             "==- on_cookie_added: %s",
             # cookie.toRawForm(self._QtNetwork.QNetworkCookie.NameAndValueOnly)
             # cookie.toRawForm(self._QtNetwork.QNetworkCookie.toRawForm)
-            cookie
+            cookie,
         )
         self._cookie_jar.insertCookie(cookie)
 
@@ -745,11 +763,10 @@ class SsoSaml2Core(object):
         the process.
         """
         url = self._view.page().mainFrame().url().toString()
-        self._dialog.setWindowTitle(url.split('?')[0])
+        self._dialog.setWindowTitle(url.split("?")[0])
         self._logger.debug("==- _on_url_changed %s", url)
-        if (
-            self._session is not None
-            and url.startswith(self._session.host + self.landing_path)
+        if self._session is not None and url.startswith(
+            self._session.host + self.landing_path
         ):
             self._sso_renew_watchdog_timer.stop()
             self.update_session_from_browser()
